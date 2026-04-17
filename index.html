@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SafeHer AI — Women's Safety Companion</title>
+
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+  <!-- Leaflet Routing Machine CSS (for routes) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+
+  <!-- Our CSS -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ========== NAVIGATION ========== -->
+  <nav id="navbar">
+    <div class="logo">
+      <div class="logo-icon">🛡️</div>
+      SafeHer <span class="logo-ai">AI</span>
+    </div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="showSection('map')">🗺️ Live Map</button>
+      <button class="nav-tab" onclick="showSection('contacts')">👥 Contacts</button>
+      <button class="nav-tab" onclick="showSection('reports')">📊 Reports</button>
+    </div>
+    <button class="sos-btn" onclick="triggerSOS()">🆘 SOS</button>
+  </nav>
+
+  <!-- ========== HERO BAR — CLICKABLE TOOLBAR ========== -->
+  <div class="hero-bar">
+    <button class="hero-feat" id="feat-ai" onclick="toggleFeature('ai')">🤖 <b>AI Risk Detection</b></button>
+    <button class="hero-feat" id="feat-shake" onclick="toggleFeature('shake')">📳 <b>Shake-to-Alert</b></button>
+    <button class="hero-feat active" id="feat-stations" onclick="toggleFeature('stations')">🚉 <b>Station Markers</b></button>
+    <button class="hero-feat" id="feat-safewalk" onclick="toggleFeature('safewalk')">🚶 <b>SafeWalk Mode</b></button>
+    <button class="hero-feat" id="feat-sos" onclick="toggleFeature('sos')">🔕 <b>Silent SOS</b></button>
+    <button class="hero-feat" id="feat-community" onclick="toggleFeature('community')">🌍 <b>Community Reports</b></button>
+  </div>
+
+  <!-- ========== MAIN APP ========== -->
+  <div class="app" id="main-app">
+
+    <!-- ===== LEFT PANEL ===== -->
+    <div class="left-panel">
+
+      <!-- Safety Status -->
+      <div class="panel" id="status-panel">
+        <div class="panel-header">
+          <span class="panel-title">🛡️ Safety Status</span>
+          <span class="live-badge">🟢 Live</span>
+        </div>
+        <div class="status-card">
+          <div class="status-ring">
+            <div class="status-ring-inner">
+              <div class="status-score" id="safety-score">72</div>
+              <div class="status-label">SAFE<br/>SCORE</div>
+            </div>
+          </div>
+          <div class="user-location-label" id="user-location-label">Detecting location...</div>
+          <div class="status-badges">
+            <span class="badge badge-safe">✅ Well-lit Route</span>
+            <span class="badge badge-warn">⚠️ Low Foot Traffic</span>
+            <span class="badge badge-safe">🚔 Patrol Nearby</span>
+          </div>
+        </div>
+
+        <!-- AI Analysis -->
+        <div class="ai-card">
+          <div class="ai-header">
+            <div class="ai-dot"></div>
+            <div class="ai-title">SafeHer AI Analysis</div>
+          </div>
+          <div class="ai-text" id="ai-text">
+            Analyzing your surroundings... Please allow location access.
+          </div>
+        </div>
+
+        <!-- Shake to Alert — onclick FIXED to handleShakeClick() -->
+        <div class="shake-widget">
+          <div class="shake-ring" id="shake-ring" onclick="handleShakeClick()">📳</div>
+          <div class="shake-label">
+            <strong>Shake to Alert</strong><br/>
+            Enable from toolbar above, then shake phone 3× to send SOS instantly
+          </div>
+          <div class="tech-tags">
+            <span class="tech-tag">Gyroscope API</span>
+            <span class="tech-tag">WebSocket Push</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Route Risk -->
+      <div class="panel" id="route-panel">
+        <div class="panel-header">
+          <span class="panel-title">📍 Route Risk</span>
+          <span class="reroute-btn" onclick="aiReroute()">Reroute →</span>
+        </div>
+        <div id="route-list">
+          <div class="route-item">
+            <div class="route-dot safe"></div>
+            <div class="route-name">MP Nagar — Zone 1</div>
+            <span class="badge badge-safe">LOW</span>
+          </div>
+          <div class="route-item">
+            <div class="route-dot warn"></div>
+            <div class="route-name">Bittan Market Area</div>
+            <span class="badge badge-warn">MED</span>
+          </div>
+          <div class="route-item">
+            <div class="route-dot danger"></div>
+            <div class="route-name">Industrial Area Bypass</div>
+            <span class="badge badge-danger">HIGH</span>
+          </div>
+          <div class="route-item">
+            <div class="route-dot safe"></div>
+            <div class="route-name">Habibganj Station</div>
+            <span class="badge badge-safe">SAFE</span>
+          </div>
+        </div>
+        <div style="padding: 0.8rem 1.2rem;">
+          <button class="ai-route-btn" onclick="aiReroute()">🔄 AI Suggest Safer Route</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== MAP CENTER ===== -->
+    <div class="center-panel">
+      <div class="map-container">
+        <div class="map-topbar">
+          <input class="map-search" id="map-search" placeholder="🔍 Search destination..." />
+          <button class="map-search-btn" onclick="searchLocation()">Search</button>
+          <div class="mode-btns">
+            <button class="mode-btn active" onclick="setMode('safety', this)">🗺️ Safety</button>
+            <button class="mode-btn" onclick="setMode('walk', this)">🚶 Walk</button>
+            <button class="mode-btn" onclick="setMode('transit', this)">🚌 Transit</button>
+          </div>
+        </div>
+
+        <!-- LEAFLET MAP -->
+        <div id="map"></div>
+
+        <!-- Stats Row -->
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-num pink" id="stat-reports">24</div>
+            <div class="stat-lbl">Reports Today</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num safe" id="stat-safety">87%</div>
+            <div class="stat-lbl">Route Safety</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num warn" id="stat-alerts">3</div>
+            <div class="stat-lbl">Active Alerts</div>
+          </div>
+        </div>
+
+        <!-- SafeWalk Mode -->
+        <div class="panel safewalk-panel">
+          <div class="panel-header">
+            <span class="panel-title">🚶 SafeWalk Mode</span>
+            <span class="badge badge-safe" id="safewalk-status">Inactive</span>
+          </div>
+          <div class="safewalk-widget">
+            <div class="safewalk-top">
+              <div class="safewalk-dest">To: <strong id="safewalk-dest">Set Destination</strong></div>
+              <div class="safewalk-eta" id="safewalk-eta">--</div>
+            </div>
+            <div class="safewalk-progress">
+              <div class="safewalk-bar" id="walk-bar"></div>
+            </div>
+            <div class="safewalk-info">
+              <span id="walk-covered">0 km covered</span>
+              <span id="walk-remaining">-- km remaining</span>
+            </div>
+            <div class="safewalk-btns">
+              <button class="btn-checkin" onclick="checkIn()">✅ I'm Safe Check-in</button>
+              <button class="btn-emergency" onclick="triggerSOS()">🆘 Emergency</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== RIGHT PANEL ===== -->
+    <div class="right-panel">
+
+      <!-- Emergency Contacts -->
+      <div class="panel" id="contacts-panel">
+        <div class="panel-header">
+          <span class="panel-title">👥 Emergency Contacts</span>
+          <span class="tech-tag">MongoDB</span>
+        </div>
+        <div id="contacts-list">
+          <div class="loading-contacts">Loading contacts...</div>
+        </div>
+        <div class="add-contact" onclick="addContact()">＋ Add Trusted Contact</div>
+      </div>
+
+      <!-- Live Alerts -->
+      <div class="panel" id="alerts-panel">
+        <div class="panel-header">
+          <span class="panel-title">🔔 Live Alerts</span>
+          <span style="font-size:0.78rem;color:var(--muted)">via WebSocket</span>
+        </div>
+        <div id="alerts-list">
+          <div class="alert-item">
+            <div class="alert-icon danger-bg">🚨</div>
+            <div class="alert-body">
+              <div class="alert-title danger-text">Incident Reported Nearby</div>
+              <div class="alert-time">Industrial Area · 2 min ago</div>
+            </div>
+          </div>
+          <div class="alert-item">
+            <div class="alert-icon warn-bg">💡</div>
+            <div class="alert-body">
+              <div class="alert-title warn-text">Poor Lighting Detected</div>
+              <div class="alert-time">Railway Colony Rd · 8 min ago</div>
+            </div>
+          </div>
+          <div class="alert-item">
+            <div class="alert-icon safe-bg">👮</div>
+            <div class="alert-body">
+              <div class="alert-title safe-text">Police Patrol Active</div>
+              <div class="alert-time">MP Nagar Zone 2 · 15 min ago</div>
+            </div>
+          </div>
+          <div class="alert-item">
+            <div class="alert-icon purple-bg">🤖</div>
+            <div class="alert-body">
+              <div class="alert-title purple-text">AI Route Optimized</div>
+              <div class="alert-time">Your route updated · 18 min ago</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Community Reports -->
+      <div class="panel" id="community-panel">
+        <div class="panel-header">
+          <span class="panel-title">🌍 Community Reports</span>
+          <span class="tech-tag">Crowdsourced</span>
+        </div>
+        <div class="community-body">
+          <div class="heatmap-label">This week in Bhopal</div>
+          <div class="heatmap-row" id="heatmap"></div>
+          <div class="heatmap-days">
+            <span>Sun</span><span>Mon</span><span>Tue</span>
+            <span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+          </div>
+          <button class="report-btn" onclick="submitReport()">📝 Report an Incident</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== SOS MODAL ========== -->
+  <div class="modal-overlay" id="sos-modal">
+    <div class="modal">
+      <div class="modal-icon">🆘</div>
+      <div class="modal-title">Emergency SOS Triggered!</div>
+      <div class="modal-text">
+        Your live location will be sent to <strong>all emergency contacts</strong>
+        via SMS. Auto-calling starts after countdown.
+      </div>
+      <div class="modal-countdown" id="countdown">5</div>
+      <div class="modal-btns">
+        <button class="btn-cancel" onclick="cancelSOS()">Cancel</button>
+        <button class="btn-confirm" onclick="confirmSOS()">Send Now</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== NOTIFICATION TOAST ========== -->
+  <div class="notif-toast" id="notif-toast">
+    <div class="notif-header">
+      <span>🛡️</span>
+      <span class="notif-title" id="notif-title">SafeHer Alert</span>
+    </div>
+    <div class="notif-body" id="notif-body">Notification message here</div>
+  </div>
+
+  <!-- ========== ADD CONTACT MODAL ========== -->
+  <div class="modal-overlay" id="contact-modal">
+    <div class="modal">
+      <div class="modal-title" style="color:var(--pink-light)">➕ Add Emergency Contact</div>
+      <div style="margin:1rem 0;display:flex;flex-direction:column;gap:0.7rem">
+        <input class="form-input" id="contact-name" placeholder="Full Name" />
+        <input class="form-input" id="contact-phone" placeholder="Phone Number (+91...)" />
+        <input class="form-input" id="contact-relation" placeholder="Relation (e.g. Mom, Friend)" />
+      </div>
+      <div class="modal-btns">
+        <button class="btn-cancel" onclick="closeContactModal()">Cancel</button>
+        <button class="btn-confirm" onclick="saveContact()">Save Contact</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="risk-alert"></div>
+
+  <!-- ========== SCRIPTS ========== -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+  <script src="script.js"></script>
+
+</body>
+</html>
