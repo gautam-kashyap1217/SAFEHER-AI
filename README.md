@@ -91,4 +91,31 @@ https://github.com/gautam-kashyap1217
 
 ---
 
+## 📸 Project Screenshots
+
+### Dashboard
+![Dashboard](screenshots/dashboard.png)
+
+---
+
+### Interactive Safety Map
+![Interactive Safety Map](screenshots/interactive-map.png)
+
+---
+
+### Emergency Contacts
+![Emergency Contacts](screenshots/emergency-contacts.png)
+
+---
+
+### Safety Analysis
+![Safety Analysis](screenshots/safety-analysis.png)
+
+---
+
+### Live Alerts
+![Live Alerts](screenshots/live-alerts.png)
+
+---
+
 ## ⭐ If you found this project useful, consider giving it a Star!
